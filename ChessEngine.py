@@ -13,7 +13,7 @@ class GameState():
         #bK --> Black King
         #bP --> Black Pawn
         #-- --> Empty Space
-        self.board = [
+        self.__board = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
@@ -23,5 +23,8 @@ class GameState():
             ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
-        self.whiteToMove = True
-        self.moveLog = []
+        self.__whiteToMove = True
+        self.__moveLog = []
+
+    def getBoard(self):
+        return self.__board
