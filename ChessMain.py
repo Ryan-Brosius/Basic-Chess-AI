@@ -28,12 +28,15 @@ def drawBoard(screen):
     for i in range(DIMENSION):
         for j in range(DIMENSION):
             if i % 2 == 0 and j % 2 == 0 or i % 2 == 1 and j % 2 == 1:
-                p.draw.rect(screen, (177,228,185), (64 * i, 64 * j, SQ_SIZE, SQ_SIZE))
+                p.draw.rect(screen, (177,228,185), (SQ_SIZE * j, SQ_SIZE * i, SQ_SIZE, SQ_SIZE))
             else:
-                p.draw.rect(screen, (112,162,163), (64 * i, 64 * j, SQ_SIZE, SQ_SIZE))
+                p.draw.rect(screen, (112,162,163), (SQ_SIZE * j, SQ_SIZE * i, SQ_SIZE, SQ_SIZE))
 
 def drawPieces(screen, board):
-    pass
+    for rows in range(DIMENSION):
+        for cols in range(DIMENSION):
+            if board[rows][cols] != "--":
+                screen.blit(IMAGES[board[rows][cols]], (cols * SQ_SIZE, rows * SQ_SIZE))
 
 #Main funtion, handles user input and graphics
 if __name__ == "__main__":
