@@ -23,7 +23,7 @@ def drawGameState(screen, gs):
     drawBoard(screen)   #Draws the squares
     drawPieces(screen, gs.getBoard())  #Draws the pieces
 
-
+#Draws the board background
 def drawBoard(screen):
     for i in range(DIMENSION):
         for j in range(DIMENSION):
@@ -32,6 +32,7 @@ def drawBoard(screen):
             else:
                 p.draw.rect(screen, (112,162,163), (SQ_SIZE * j, SQ_SIZE * i, SQ_SIZE, SQ_SIZE))
 
+#Draws the pieces to the board
 def drawPieces(screen, board):
     for rows in range(DIMENSION):
         for cols in range(DIMENSION):
