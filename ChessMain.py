@@ -4,7 +4,7 @@
 ## Date - 6/21/2022
 
 import pygame as p
-from ChessEngine import GameState
+from ChessEngine import GameState, Move
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -44,15 +44,33 @@ if __name__ == "__main__":
     p.init()
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
-    screen.fill((255,255,255))
     gs = GameState()
     loadImages()
     running = True
+    sqSelected = ()
+    playerClicks = []
     
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+            elif e.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos()
+                col = location[0] // SQ_SIZE
+                row = location[1] // SQ_SIZE
+                if sqSelected == (row, col):
+                    sqSelected == ()
+                    playerClicks = []
+                else:
+                    sqSelected = (row, col)
+                    playerClicks.append(sqSelected)
+                if len(playerClicks) == 2:
+                    move = Move(playerClicks[0], playerClicks[1], gs.getBoard())
+                    print(move.getChessNotation())
+                    gs.makeMove(move)
+                    sqSelected = ()
+                    playerClicks = []
+
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         p.display.flip()
