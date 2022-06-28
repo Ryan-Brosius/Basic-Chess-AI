@@ -12,6 +12,10 @@ SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 15
 IMAGES = {}
 
+#UI Elements
+HIGHLIGHT_COLOR = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
+p.draw.rect(HIGHLIGHT_COLOR, (184,139,74,150), HIGHLIGHT_COLOR.get_rect())
+
 #Creates a dictionary of images, called only once in main
 def loadImages():
     pieces = ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK" ]
@@ -19,8 +23,9 @@ def loadImages():
         IMAGES[piece] = p.transform.scale(p.image.load("images/" + piece + ".png"), (SQ_SIZE, SQ_SIZE))
 
 #Draws the board to the screen
-def drawGameState(screen, gs):
+def drawGameState(screen, gs, playerClicks):
     drawBoard(screen)   #Draws the squares
+    drawUIUnderPieces(screen, playerClicks) #Draws UI elements under pieces
     drawPieces(screen, gs.getBoard())  #Draws the pieces
 
 #Draws the board background
@@ -32,6 +37,13 @@ def drawBoard(screen):
             else:
                 p.draw.rect(screen, (112,162,163), (SQ_SIZE * j, SQ_SIZE * i, SQ_SIZE, SQ_SIZE))
 
+#Draws the UI elements under the pieces, like the current player piece selected
+def drawUIUnderPieces(screen, playerClicks):
+    if len(playerClicks) == 1:
+        row = playerClicks[0][0]
+        col = playerClicks[0][1]
+        screen.blit(HIGHLIGHT_COLOR, (SQ_SIZE * col, SQ_SIZE * row))
+
 #Draws the pieces to the board
 def drawPieces(screen, board):
     for rows in range(DIMENSION):
@@ -39,12 +51,15 @@ def drawPieces(screen, board):
             if board[rows][cols] != "--":
                 screen.blit(IMAGES[board[rows][cols]], (cols * SQ_SIZE, rows * SQ_SIZE))
 
+
 #Main funtion, handles user input and graphics
 if __name__ == "__main__":
     p.init()
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     gs = GameState()
+    validMoves = gs.getValidMoves()
+    moveMade = False
     loadImages()
     running = True
     sqSelected = ()
@@ -54,23 +69,37 @@ if __name__ == "__main__":
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-            elif e.type == p.MOUSEBUTTONDOWN:
+
+            #Mouse Pressing
+            elif e.type == p.MOUSEBUTTONDOWN:   #Saves the location of the piece clicked
                 location = p.mouse.get_pos()
                 col = location[0] // SQ_SIZE
                 row = location[1] // SQ_SIZE
-                if sqSelected == (row, col):
-                    sqSelected == ()
+                if sqSelected == (row, col):    #If the same piece is clicked twice, nothing happens
+                    sqSelected = ()
                     playerClicks = []
-                else:
+                elif (((gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "w") or (not gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "b")) and len(playerClicks) == 0) or len(playerClicks) == 1: #Only allows the player to select white/black pieces on their specific turn
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected)
-                if len(playerClicks) == 2:
+                if len(playerClicks) == 2:      #Once two different locations are in the list, the piece moves and the board updated
                     move = Move(playerClicks[0], playerClicks[1], gs.getBoard())
-                    print(move.getChessNotation())
-                    gs.makeMove(move)
+                    if move in validMoves:
+                        print(move.getChessNotation())
+                        gs.makeMove(move)
+                        moveMade = True
                     sqSelected = ()
                     playerClicks = []
 
-        drawGameState(screen, gs)
+            #Key Pressing
+            if e.type == p.KEYDOWN:
+                if e.key == p.K_z:  #Undos a Move (When pressing the Z key)
+                    gs.undoMove()
+                    moveMade = True
+
+        if moveMade:    #Only generates valid moves once a player moves
+            validMoves = gs.getValidMoves()
+            moveMade = False
+
+        drawGameState(screen, gs, playerClicks)
         clock.tick(MAX_FPS)
         p.display.flip()
