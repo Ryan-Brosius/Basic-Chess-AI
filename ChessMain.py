@@ -13,8 +13,10 @@ MAX_FPS = 15
 IMAGES = {}
 
 #UI Elements
-HIGHLIGHT_COLOR = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
-p.draw.rect(HIGHLIGHT_COLOR, (184,139,74,150), HIGHLIGHT_COLOR.get_rect())
+UI_SQUARE_HIGHLIGHT = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
+UI_CIRCLE_HIGHLIGHT = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
+p.draw.rect(UI_SQUARE_HIGHLIGHT, (184,139,74,150), UI_SQUARE_HIGHLIGHT.get_rect())
+p.draw.circle(UI_CIRCLE_HIGHLIGHT, (184,139,74,150), (SQ_SIZE/2,SQ_SIZE/2), 10)
 
 #Creates a dictionary of images, called only once in main
 def loadImages():
@@ -27,6 +29,7 @@ def drawGameState(screen, gs, playerClicks):
     drawBoard(screen)   #Draws the squares
     drawUIUnderPieces(screen, playerClicks) #Draws UI elements under pieces
     drawPieces(screen, gs.getBoard())  #Draws the pieces
+    drawUIOverPieces(screen, playerClicks)
 
 #Draws the board background
 def drawBoard(screen):
@@ -42,7 +45,7 @@ def drawUIUnderPieces(screen, playerClicks):
     if len(playerClicks) == 1:
         row = playerClicks[0][0]
         col = playerClicks[0][1]
-        screen.blit(HIGHLIGHT_COLOR, (SQ_SIZE * col, SQ_SIZE * row))
+        screen.blit(UI_SQUARE_HIGHLIGHT, (SQ_SIZE * col, SQ_SIZE * row))
 
 #Draws the pieces to the board
 def drawPieces(screen, board):
@@ -51,6 +54,11 @@ def drawPieces(screen, board):
             if board[rows][cols] != "--":
                 screen.blit(IMAGES[board[rows][cols]], (cols * SQ_SIZE, rows * SQ_SIZE))
 
+def drawUIOverPieces(screen, playerClicks):
+    if len(playerClicks) == 1:
+        for moves in validMoves:    #Displays the valid squares a piece can move to (NOTE: Costly operation will have to fix in future)
+            if (row,col) == moves.getStartSq():
+                screen.blit(UI_CIRCLE_HIGHLIGHT, (SQ_SIZE * moves.getEndSq()[1], SQ_SIZE * moves.getEndSq()[0]))
 
 #Main funtion, handles user input and graphics
 if __name__ == "__main__":
@@ -81,6 +89,7 @@ if __name__ == "__main__":
                 elif (((gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "w") or (not gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "b")) and len(playerClicks) == 0) or len(playerClicks) == 1: #Only allows the player to select white/black pieces on their specific turn
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected)
+                    displayMoveableSquares = True
                 if len(playerClicks) == 2:      #Once two different locations are in the list, the piece moves and the board updated
                     move = Move(playerClicks[0], playerClicks[1], gs.getBoard())
                     if move in validMoves:
