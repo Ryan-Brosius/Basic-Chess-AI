@@ -54,6 +54,7 @@ def drawPieces(screen, board):
             if board[rows][cols] != "--":
                 screen.blit(IMAGES[board[rows][cols]], (cols * SQ_SIZE, rows * SQ_SIZE))
 
+#Draws the UI elements that are on top of the pieces
 def drawUIOverPieces(screen, playerClicks):
     if len(playerClicks) == 1:
         for moves in validMoves:    #Displays the valid squares a piece can move to (NOTE: Costly operation will have to fix in future)
@@ -96,8 +97,14 @@ if __name__ == "__main__":
                         print(move.getChessNotation())
                         gs.makeMove(move)
                         moveMade = True
-                    sqSelected = ()
-                    playerClicks = []
+                        sqSelected = ()
+                        playerClicks = []
+                    elif ((gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "w") or (not gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "b")):
+                        print(sqSelected)
+                        playerClicks = [sqSelected]
+                    else:
+                        sqSelected = ()
+                        playerClicks = []
 
             #Key Pressing
             if e.type == p.KEYDOWN:
