@@ -93,14 +93,14 @@ if __name__ == "__main__":
                     displayMoveableSquares = True
                 if len(playerClicks) == 2:      #Once two different locations are in the list, the piece moves and the board updated
                     move = Move(playerClicks[0], playerClicks[1], gs.getBoard())
-                    if move in validMoves:
-                        print(move.getChessNotation())
-                        gs.makeMove(move)
-                        moveMade = True
-                        sqSelected = ()
-                        playerClicks = []
-                    elif ((gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "w") or (not gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "b")):
-                        print(sqSelected)
+                    for i in range(len(validMoves)):
+                        if move == validMoves[i]:
+                            #print(move.getChessNotation())
+                            gs.makeMove(validMoves[i])
+                            moveMade = True
+                            sqSelected = ()
+                            playerClicks = []
+                    if not moveMade and ((gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "w") or (not gs.getWhiteToMove() and gs.getBoard()[row][col][0] == "b")):
                         playerClicks = [sqSelected]
                     else:
                         sqSelected = ()

@@ -31,6 +31,9 @@ class GameState():
         self.__moveLog = []
         self.__whiteKingLocation = (7, 4)
         self.__blackKingLocation = (0, 4)
+        self.__checkMate = False
+        self.__staleMate = False
+        self.__enpassantPossible = () #cords for enpassant square
 
     def getBoard(self):
         return self.__board
@@ -51,6 +54,19 @@ class GameState():
         elif move.getPieceMoved() == "bK":
             self.__blackKingLocation = move.getEndSq()
 
+        #Pawn promotion
+        if move.isPawnPromotion():
+            self.__board[move.getEndSq()[0]][move.getEndSq()[1]] = move.getPieceMoved()[0] + "Q"
+
+        #enpassant move
+        if move.isEnpassantMove():
+            self.__board[move.getStartSq()[0]][move.getEndSq()[1]] = "--"
+        if move.getPieceMoved()[1] == "P" and abs(move.getStartSq()[0] - move.getEndSq()[0]) == 2:
+            self.__enpassantPossible = ((move.getStartSq()[0] + move.getEndSq()[0])//2, move.getStartSq()[1])
+        else:
+            self.__enpassantPossible = ()
+
+
     def undoMove(self):
         if len(self.getMoveLog()) > 0:
             move = self.__moveLog.pop()
@@ -61,16 +77,34 @@ class GameState():
                 self.__whiteKingLocation = move.getStartSq()
             elif move.getPieceMoved() == "bK":
                 self.__blackKingLocation = move.getStartSq()
+            if move.isEnpassantMove():
+                self.__board[move.getEndSq()[0]][move.getEndSq()[1]] = "--"
+                self.__board[move.getStartSq()[0]][move.getEndSq()[1]] = move.getPieceCaptured()
+                self.__enpassantPossible = (move.getEndSq()[0], move.getEndSq()[1])
+                print(self.__enpassantPossible)
+            if move.getPieceMoved()[1] == "P" and abs(move.getStartSq()[0] - move.getEndSq()[0]) == 2:
+                self.__enpassantPossible = ()
 
     def getValidMoves(self):    #All moves when in check
+        tempEnpassantPossible = self.__enpassantPossible
         moves = self.getAllPossibleMoves()
-        for i in range(len(moves)-1, -1, -1):
+        for i in range(len(moves)-1, -1, -1):   #Removes invalid moves that would lead to checkmate
             self.makeMove(moves[i])
             self.__whiteToMove = not self.__whiteToMove
             if self.inCheck():
                 moves.remove(moves[i])
             self.__whiteToMove = not self.__whiteToMove
             self.undoMove()
+        if len(moves) == 0: #Checkmate or stalemate
+            if self.inCheck():
+                self.__checkMate = True
+            else:
+                self.__staleMate = True
+        else:
+            self.__checkMate = False
+            self.__staleMate = False
+
+        self.__enpassantPossible = tempEnpassantPossible
         return moves
 
     def inCheck(self):  #Determine if the player is in check
@@ -119,9 +153,13 @@ class GameState():
             if col-1 >= 0:  #Checks to capture a piece from the left
                 if self.__board[row-1][col-1][0] == "b":
                     moves.append(Move((row, col), (row-1, col-1), self.__board))
+                elif (row-1, col-1) == self.__enpassantPossible:
+                    moves.append(Move((row, col), (row-1, col-1), self.__board, isEnpassantMove=True))
             if col+1 <= 7:  #Checks to capture a piece from the right
                 if self.__board[row-1][col+1][0] == "b":
                     moves.append(Move((row, col), (row-1, col+1), self.__board))
+                elif (row-1, col+1) == self.__enpassantPossible:
+                    moves.append(Move((row, col), (row-1, col+1), self.__board, isEnpassantMove=True))
 
         elif not self.__whiteToMove and row <= 6:   #black pawn moves (SIDE NOTE: DOESNT CALCULATE ON ROW 7)
             if self.__board[row+1][col] == "--": #Square below is empty
@@ -131,9 +169,13 @@ class GameState():
             if col-1 >= 0:  #checks to capture a piece from the left
                 if self.__board[row+1][col-1][0] == "w":
                     moves.append(Move((row, col), (row+1, col-1), self.__board))
+                elif (row+1, col-1) == self.__enpassantPossible:
+                    moves.append(Move((row, col), (row+1, col-1), self.__board, isEnpassantMove=True))
             if col+1 <= 7:  #Checks to capture a piece from the right
                 if self.__board[row+1][col+1][0] == "w":
                     moves.append(Move((row, col), (row+1, col+1), self.__board))
+                elif (row+1, col+1) == self.__enpassantPossible:
+                    moves.append(Move((row, col), (row+1, col+1), self.__board, isEnpassantMove=True))
 
     def getRookMoves(self, row, col, moves):    #Gets all of the valid rook moves
         directions = ((-1, 0), (0, -1), (1, 0), (0, 1))
@@ -219,13 +261,17 @@ class Move():
                    "e": 4, "f": 5, "g": 6, "h": 7}
     colsToFiles = {v: k for k, v in filesToCols.items()}
 
-    def __init__(self, startSq, endSq, board):
+    def __init__(self, startSq, endSq, board, isEnpassantMove = False):
         self.__startRow = startSq[0]
         self.__startCol = startSq[1]
         self.__endRow = endSq[0]
         self.__endCol = endSq[1]
         self.__pieceMoved = board[self.__startRow][self.__startCol]
         self.__pieceCaptured = board[self.__endRow][self.__endCol]
+        self.__isPawnPromotion = (self.__pieceMoved == "wP" and self.getEndSq()[0] == 0) or (self.__pieceMoved == "bP" and self.getEndSq()[0] == 7)
+        self.__isEnpassantMove = isEnpassantMove
+        if self.__isEnpassantMove:
+            self.__pieceCaptured = "wP" if self.__pieceCaptured == "bP" else "bP"
         self.__moveID = self.__startRow * 1000 + self.__startCol * 100 + self.__endRow * 10 + self.__endCol
 
     def __eq__(self, other):
@@ -244,6 +290,12 @@ class Move():
 
     def getPieceCaptured(self):
         return self.__pieceCaptured
+
+    def isPawnPromotion(self):
+        return self.__isPawnPromotion
+
+    def isEnpassantMove(self):
+        return self.__isEnpassantMove
 
     def getChessNotation(self):
         return self.getRankFile(self.__startRow, self.__startCol) + self.getRankFile(self.__endRow, self.__endCol)
