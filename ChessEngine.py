@@ -44,6 +44,12 @@ class GameState():
     def getWhiteToMove(self):
         return self.__whiteToMove
 
+    def getCheckMate(self):
+        return self.__checkMate
+
+    def getStaleMate(self):
+        return self.__staleMate
+
     def makeMove(self, move):
         self.__board[move.getStartSq()[0]][move.getStartSq()[1]] = "--"
         self.__board[move.getEndSq()[0]][move.getEndSq()[1]] = move.getPieceMoved()
@@ -143,6 +149,7 @@ class GameState():
                 moves.remove(moves[i])
             self.__whiteToMove = not self.__whiteToMove
             self.undoMove()
+
         if len(moves) == 0: #Checkmate or stalemate
             if self.inCheck():
                 self.__checkMate = True
@@ -252,7 +259,7 @@ class GameState():
         allyColor = "w" if self.__whiteToMove else "b"
         for i in range(8):
                 try:
-                    if self.__board[row-rowNums[i]][col-colNums[i]][0] != allyColor:
+                    if self.__board[row-rowNums[i]][col-colNums[i]][0] != allyColor and row-rowNums[i] >= 0 and col-colNums[i] >= 0:
                         moves.append(Move((row, col), (row-rowNums[i], col-colNums[i]), self.__board))
                 except: 
                     pass
@@ -286,7 +293,7 @@ class GameState():
         allyColor = "w" if self.__whiteToMove else "b"
         for i in range(8):
                 try:
-                    if self.__board[row-rowNums[i]][col-colNums[i]][0] != allyColor:
+                    if self.__board[row-rowNums[i]][col-colNums[i]][0] != allyColor and row-rowNums[i] >= 0 and col-colNums[i] >= 0:
                         moves.append(Move((row, col), (row-rowNums[i], col-colNums[i]), self.__board))
                 except: 
                      pass
