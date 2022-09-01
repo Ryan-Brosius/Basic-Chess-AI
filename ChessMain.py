@@ -5,6 +5,7 @@
 
 import pygame as p
 from ChessEngine import GameState, Move
+import ChessAI
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -74,14 +75,17 @@ if __name__ == "__main__":
     sqSelected = ()
     playerClicks = []
     gameOver = False
+    playerOne = False    # If human playing True, if AI playing False
+    playerTwo = False   # Same as above
     
     while running:
+        humanTurn = (gs.getWhiteToMove() and playerOne) or (gs.getWhiteToMove() and playerTwo)
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
 
             #Mouse Pressing
-            elif e.type == p.MOUSEBUTTONDOWN and not gameOver:   #Saves the location of the piece clicked
+            elif e.type == p.MOUSEBUTTONDOWN and not gameOver and humanTurn:   #Saves the location of the piece clicked
                 location = p.mouse.get_pos()
                 col = location[0] // SQ_SIZE
                 row = location[1] // SQ_SIZE
@@ -121,13 +125,19 @@ if __name__ == "__main__":
                     moveMade = False
                     gameOver = False
 
+        #AI move finder logic
+        if not gameOver and not humanTurn:
+            AIMove = ChessAI.findRandomMove(validMoves)
+            gs.makeMove(AIMove)
+            moveMade = True
+
 
         if moveMade:    #Only generates valid moves once a player moves
             validMoves = gs.getValidMoves()
             moveMade = False
 
-        drawGameState(screen, gs, playerClicks)
-        def drawText(screen, text, Tcolor, Bcolor):
+        drawGameState(screen, gs, playerClicks)     #Draws everything boardwise
+        def drawText(screen, text, Tcolor, Bcolor): #Draws text once a color wins
             font = p.font.SysFont("Helvitca", 32, True, False)
             textObject = font.render(text, 0, Bcolor)
             textLocation = p.Rect(0,0, WIDTH, HEIGHT).move(WIDTH/2 - textObject.get_width()/2, HEIGHT/2 - textObject.get_height()/2)
@@ -143,7 +153,7 @@ if __name__ == "__main__":
                 drawText(screen, "White wins by checkmate!", p.Color("White"), (112,162,163))
         elif gs.getStaleMate():
             gameOver = True
-            drawText(screen, "Stalemate")
+            drawText(screen, "Stalemate", p.Color("Black"), (177,228,185))
 
         clock.tick(MAX_FPS)
         p.display.flip()
