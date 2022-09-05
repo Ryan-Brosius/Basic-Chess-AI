@@ -116,6 +116,8 @@ class GameState():
                 else:
                     self.__board[move.getEndSq()[0]][move.getEndSq()[1]-2] = self.__board[move.getEndSq()[0]][move.getEndSq()[1]+1]
                     self.__board[move.getEndSq()[0]][move.getEndSq()[1]+1] = "--"
+            self.__checkMate = False
+            self.__staleMate = False
 
 
     def updateCastleRights(self, move):
