@@ -347,7 +347,7 @@ class Move():
         self.__isPawnPromotion = (self.__pieceMoved == "wP" and self.getEndSq()[0] == 0) or (self.__pieceMoved == "bP" and self.getEndSq()[0] == 7)
         self.__isEnpassantMove = isEnpassantMove
         if self.__isEnpassantMove:
-            self.__pieceCaptured = "wP" if self.__pieceCaptured == "bP" else "bP"
+            self.__pieceCaptured = "wP" if self.__pieceMoved == "bP" else "bP"
         self.__isCastleMove = isCastleMove
         self.__moveID = self.__startRow * 1000 + self.__startCol * 100 + self.__endRow * 10 + self.__endCol
 
