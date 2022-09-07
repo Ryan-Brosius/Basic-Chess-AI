@@ -6,13 +6,14 @@
 import pygame as p
 from ChessEngine import GameState, Move
 import ChessAI
+from multiprocessing import Process, Queue
 
 BOARD_WIDTH = BOARD_HEIGHT = 512
-MOVE_LOG_PANEL_WIDTH = 150
+MOVE_LOG_PANEL_WIDTH = 200
 MOVE_LOG_PANEL_HEIGHT = BOARD_HEIGHT
 DIMENSION = 8
 SQ_SIZE = BOARD_HEIGHT // DIMENSION
-MAX_FPS = 15
+MAX_FPS = 5
 IMAGES = {}
 
 #UI Elements
@@ -85,10 +86,13 @@ def drawMoveLog(screen, gs, font):
         textObject = font.render(text, True, p.Color("white"))
         textLocation = moveLogRect.move(4, 4 + padding * counter)
         screen.blit(textObject, textLocation)
-        #text = str(gs.getBoardRatingLog()[i])
-        #textObject = font.render(text, True, p.Color("white"))
-        #textLocation = moveLogRect.move(MOVE_LOG_PANEL_WIDTH - textObject.get_width() - padding, 4 + padding * i)
-        #screen.blit(textObject, textLocation)
+        try:
+            text = str(gs.getBoardRatingLog()[i*2] / 10) + "  " + str(gs.getBoardRatingLog()[i*2 + 1] / 10)
+        except:
+            text = str(gs.getBoardRatingLog()[i*2] / 10)
+        textObject = font.render(text, True, p.Color("white"))
+        textLocation = moveLogRect.move(MOVE_LOG_PANEL_WIDTH - textObject.get_width() - padding, 4 + padding * i)
+        screen.blit(textObject, textLocation)
 
         counter += 1
 
@@ -108,7 +112,9 @@ if __name__ == "__main__":
     gameOver = False
     drawMovePanel = False
     playerOne = True    # If human playing True, if AI playing False
-    playerTwo = True   # Same as above
+    playerTwo = False   # Same as above
+    AIThinking = False
+    moveFinderProcess = None
     
     while running:
         humanTurn = (gs.getWhiteToMove() and playerOne) or (not gs.getWhiteToMove() and playerTwo)
@@ -117,7 +123,7 @@ if __name__ == "__main__":
                 running = False
 
             #Mouse Pressing
-            elif e.type == p.MOUSEBUTTONDOWN and not gameOver and humanTurn:   #Saves the location of the piece clicked
+            elif e.type == p.MOUSEBUTTONDOWN and not gameOver:   #Saves the location of the piece clicked
                 location = p.mouse.get_pos()
                 col = location[0] // SQ_SIZE
                 row = location[1] // SQ_SIZE
@@ -128,7 +134,7 @@ if __name__ == "__main__":
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected)
                     displayMoveableSquares = True
-                if len(playerClicks) == 2:      #Once two different locations are in the list, the piece moves and the board updated
+                if len(playerClicks) == 2 and humanTurn:      #Once two different locations are in the list, the piece moves and the board updated
                     move = Move(playerClicks[0], playerClicks[1], gs.getBoard())
                     for i in range(len(validMoves)):
                         if move == validMoves[i]:
@@ -165,11 +171,22 @@ if __name__ == "__main__":
 
         #AI move finder logic
         if not gameOver and not humanTurn:
-            AIMove = ChessAI.findBestMove(gs, validMoves)
-            if AIMove is None:
-                AIMove = ChessAI.findRandomMove(validMoves)
-            gs.makeMove(AIMove)
-            moveMade = True
+            if not AIThinking:
+                AIThinking = True
+                print("Thinking...")
+                returnQueue = Queue()
+                moveFinderProcess = Process(target=ChessAI.findBestMove, args=(gs, validMoves, returnQueue))
+                #moveFinderProcess = Process(target=ChessAI.findBestMoveMinMax, args=(gs, validMoves, returnQueue))
+                moveFinderProcess.start()
+
+            if not moveFinderProcess.is_alive():
+                print("Done Thinking :D")
+                AIMove = returnQueue.get()
+                if AIMove is None:
+                    AIMove = ChessAI.findRandomMove(validMoves)
+                gs.makeMove(AIMove)
+                moveMade = True
+                AIThinking = False
 
 
         if moveMade:    #Only generates valid moves once a player moves
