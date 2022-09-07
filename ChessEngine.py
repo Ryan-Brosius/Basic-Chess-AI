@@ -407,7 +407,7 @@ class Move():
 
     def __str__(self):
         if self.__isCastleMove:
-            return "0-0" if self.endCol == 6 else "0-0-0"
+            return "0-0" if self.__endCol == 6 else "0-0-0"
         endSquare = self.getRankFile(self.__endRow, self.__endCol)
         if self.__pieceMoved[1] == "P":
             if self.__isCapture:
