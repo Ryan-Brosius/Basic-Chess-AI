@@ -6,19 +6,19 @@
 import random
 
 pieceScores ={"K": 0,
-              "Q": 10,
-              "R": 5,
-              "B": 3,
-              "N": 3,
-              "P": 1}
+              "Q": 90,
+              "R": 50,
+              "B": 30,
+              "N": 30,
+              "P": 10}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 3
+DEPTH = 2
 
 def findRandomMove(validMoves):
     return validMoves[random.randint(0, len(validMoves)-1)]
 
-def findBestMoveMinMax(gs, validMoves):
+def findBestMoveMinMax(gs, validMoves, returnQueue):
     turnMultiplier = 1 if gs.getWhiteToMove() else -1
     opponentMinMaxScore = CHECKMATE
     bestPlayerMove = None
@@ -40,7 +40,7 @@ def findBestMoveMinMax(gs, validMoves):
                 elif gs.getStaleMate():
                     score = STALEMATE
                 else:
-                    score = -turnMultiplier * scoreMaterial(gs.getBoard())
+                    score = -turnMultiplier * scoreBoard(gs)
                 if score > opponentMaxScore:
                     opponentMaxScore = score
                 gs.undoMove()
@@ -48,15 +48,17 @@ def findBestMoveMinMax(gs, validMoves):
             opponentMinMaxScore = opponentMaxScore
             bestPlayerMove = playerMove
         gs.undoMove()
-    return bestPlayerMove
+    returnQueue.put(bestPlayerMove)
 
-def findBestMove(gs, validMoves):
-    global nextMove
+def findBestMove(gs, validMoves, returnQueue):
+    global nextMove, counter
     nextMove = None
     random.shuffle(validMoves)
+    counter = 0
     #findMoveMinMax(gs, validMoves, DEPTH, gs.getWhiteToMove())
     findMoveNegaMaxAlphaBeta(gs, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.getWhiteToMove() else -1)
-    return nextMove
+    print(counter)
+    returnQueue.put(nextMove)
 
 def findMoveMinMax(gs, validMoves, depth, whiteToMove):
     global nextMove
@@ -89,7 +91,8 @@ def findMoveMinMax(gs, validMoves, depth, whiteToMove):
         return minScore
 
 def findMoveNegaMaxAlphaBeta(gs, validMoves, depth, alpha, beta, turnMultiplier):
-    global nextMove
+    global nextMove, counter
+    counter += 1
     if depth == 0:
         return turnMultiplier * scoreBoard(gs)
 
@@ -109,6 +112,102 @@ def findMoveNegaMaxAlphaBeta(gs, validMoves, depth, alpha, beta, turnMultiplier)
             break
     return maxScore
 
+def evaluateLocation(row, col, piece):
+    whitePawnEval = [
+        [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+        [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
+        [1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
+        [0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
+        [0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
+        [0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
+        [0.5,  1.0, 1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
+        [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
+    ]
+
+    blackPawnEval = list(reversed(whitePawnEval))
+
+    knightEval = [
+        [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
+        [-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
+        [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
+        [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+        [-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0],
+        [-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+        [-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0],
+        [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
+    ]
+
+    whiteBishopEval = [
+        [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
+        [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+        [ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
+        [ -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0],
+        [ -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0],
+        [ -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0],
+        [ -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0],
+        [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
+    ]
+
+    blackBishopEval = list(reversed(whiteBishopEval))
+
+    whiteRookEval = [
+        [  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+        [  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
+        [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+        [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+        [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+        [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+        [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+        [  0.0,   0.0, 0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
+    ]
+
+    blackRookEval = list(reversed(whiteRookEval))
+
+    queenEval = [
+        [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
+        [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+        [ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+        [ -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+        [  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+        [ -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+        [ -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+        [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
+    ]
+
+    whiteKingEval = [
+        [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+        [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+        [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+        [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+        [ -2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
+        [ -1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0],
+        [  2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0 ],
+        [  2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0 ]
+    ]
+
+    blackKingEval = list(reversed(whiteKingEval))
+
+    if piece == "wP":
+        return whitePawnEval[row][col]
+    elif piece == "bP":
+        return blackPawnEval[row][col]
+    elif piece[1] == "N":
+        return knightEval[row][col]
+    elif piece == "wB":
+        return whiteBishopEval[row][col]
+    elif piece == "bB":
+        return blackBishopEval[row][col]
+    elif piece == "wR":
+        return whiteRookEval[row][col]
+    elif piece == "bR":
+        return blackRookEval[row][col]
+    elif piece[1] == "Q":
+        return queenEval[row][col]
+    elif piece == "wK":
+        return whiteKingEval[row][col]
+    elif piece == "bK":
+        return blackKingEval[row][col]
+
 def scoreBoard(gs):
     if gs.getCheckMate():
         if gs.getWhiteToMove():
@@ -118,22 +217,31 @@ def scoreBoard(gs):
     elif gs.getStaleMate():
         return STALEMATE
 
+
     score = 0
-    for row in gs.getBoard():
-        for square in row:
-            if square[0] == "w":
-                score += pieceScores[square[1]]
-            elif square[0] =="b":
-                score -= pieceScores[square[1]]
+    for row in range(8):
+        for col in range(8):
+            piece = gs.getBoard()[row][col]
+            if piece[0] == "w":
+                score += pieceScores[piece[1]]
+                score += evaluateLocation(row, col, gs.getBoard()[row][col])
+            elif piece[0] =="b":
+                score -= pieceScores[piece[1]]
+                score -= evaluateLocation(row, col, gs.getBoard()[row][col])
     return score
+
+
+
 
 # Score the board on material
 def scoreMaterial(board):
     score = 0
-    for row in board:
-        for square in row:
-            if square[0] == "w":
-                score += pieceScores[square[1]]
-            elif square[0] =="b":
-                score -= pieceScores[square[1]]
+    for row in len(board):
+        for col in len(row):
+            if board[row][col] == "w":
+                score += pieceScores[board[row][col]]
+            elif board[row][col] =="b":
+                score -= pieceScores[board[row][col]]
+            score += evaluateLocation(row, col, board[row][col])
     return score
+    print(score)
